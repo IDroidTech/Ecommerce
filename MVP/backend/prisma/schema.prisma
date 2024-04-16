@@ -1,0 +1,381 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Schema guid 
+// 1- Make the relations at the buttom of each model
+// 2- Seperate Each Section to Be Like This
+//    - section #1 => products    models    reviewed
+//    - section #2 => user        models    reviewed
+//    - section #3 => cart        models
+//    - section #4 => order       models
+// ------------------------------------------------------------------------------------------------------------
+
+// section #1
+// product models 
+model product {
+  id                Int                 @id @default(autoincrement())
+  name              String
+  description       String
+  recommended       Boolean             @default(false)
+  created_at        DateTime            @default(now())
+  updated_at        DateTime            @updatedAt
+  // ------------------------------------------------------------------------------------------------------------
+  // add the opposite relation to the product item model
+  product_item      product_item[]
+  // ------------------------------------------------------------------------------------------------------------
+  // add the category foreign key relation that refer to the category model
+  category_id       Int
+  category          category            @relation(fields: [category_id], references: [id], onDelete: Restrict)
+  // ------------------------------------------------------------------------------------------------------------
+  // add the product_promotion opposite relation
+  product_promotion product_promotion[]
+  // ------------------------------------------------------------------------------------------------------------
+  // add the brand foreign key relation
+  brand_id          Int
+  brand             brand               @relation(fields: [brand_id], references: [id], onDelete: Restrict)
+}
+
+model category {
+  id                 Int         @id @default(autoincrement())
+  category_name      String
+  // ------------------------------------------------------------------------------------------------------------
+  // add the parent category foreign key relation that refer to the same model
+  parent_category_id Int? // the filed where the parent category id will be stored
+  parent_category    category?   @relation("ChildToParent", fields: [parent_category_id], references: [id], onDelete: SetNull) // the relation to the parent category
+  child_categories   category[]  @relation("ChildToParent") // the opposite relation for the parent category
+  // ------------------------------------------------------------------------------------------------------------
+  // add the product foreign key relation that refer to the product model
+  products           product[] // the opposite relation to the product model
+  // ------------------------------------------------------------------------------------------------------------
+  // add variation opposite relation 
+  variation          variation[]
+  // ------------------------------------------------------------------------------------------------------------
+}
+
+model product_item {
+  id                    Int                     @id @default(autoincrement())
+  SKU                   String                  @unique
+  qty_in_stock          Int
+  product_image         String
+  price                 Float
+  created_at            DateTime                @default(now())
+  updated_at            DateTime                @updatedAt
+  // ------------------------------------------------------------------------------------------------------------
+  // add the product foreign key relation
+  product_id            Int
+  product               product                 @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  // ------------------------------------------------------------------------------------------------------------
+  // add the variation_option opposite relation
+  product_configuration product_configuration[]
+  // ------------------------------------------------------------------------------------------------------------
+  // add the cart_item opposite relation
+  cart_item             cart_item[]
+  // ------------------------------------------------------------------------------------------------------------
+  // add the order line opposite relation
+  order_line            order_line[]
+  // ------------------------------------------------------------------------------------------------------------
+  // add the wishlist_item opposite relation
+  wishlist_item         wishlist_item[]
+}
+
+model variation {
+  id               Int                @id @default(autoincrement())
+  name             String
+  // ------------------------------------------------------------------------------------------------------------
+  // add the category foreign key relation
+  category_id      Int
+  category         category[]
+  // ------------------------------------------------------------------------------------------------------------
+  // add the variation_option opposite relation
+  variation_option variation_option[]
+  // ------------------------------------------------------------------------------------------------------------
+}
+
+model variation_option {
+  id                    Int                     @id @default(autoincrement())
+  value                 String
+  // ------------------------------------------------------------------------------------------------------------
+  // add the variation foreign key relation
+  variation_id          Int
+  variation             variation               @relation(fields: [variation_id], references: [id], onDelete: Restrict)
+  // ------------------------------------------------------------------------------------------------------------
+  // add the product_configuration relation
+  product_configuration product_configuration[]
+}
+
+model product_configuration {
+  // ------------------------------------------------------------------------------------------------------------
+  // add the product_item foreign key relation
+  product_item_id  Int                @id
+  product_item     product_item       @relation(fields: [product_item_id], references: [id], onDelete: Cascade)
+  // ------------------------------------------------------------------------------------------------------------
+  // add the variation_option relation
+  variation_option variation_option[]
+}
+
+model promotion {
+  id                    Int                 @id @default(autoincrement())
+  promotion_name        String
+  promotion_description String
+  discount              Float
+  start_date            DateTime
+  end_date              DateTime
+  // ------------------------------------------------------------------------------------------------------------
+  // add the product_promotion opposite relation
+  product_promotion     product_promotion[]
+}
+
+model product_promotion {
+  // ------------------------------------------------------------------------------------------------------------
+  // add the product foreign key relation
+  product_id   Int       @unique
+  product      product   @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  // ------------------------------------------------------------------------------------------------------------
+  // add the promotion foreign key relation
+  promotion_id Int
+  promotion    promotion @relation(fields: [promotion_id], references: [id], onDelete: Restrict)
+
+  // ------------------------------------------------------------------------------------------------------------
+  // add the composite primary key
+  @@id([product_id, promotion_id])
+}
+
+model brand {
+  id         Int       @id @default(autoincrement())
+  brand_name String
+  // ------------------------------------------------------------------------------------------------------------
+  // add the product opposite relation
+  product    product[]
+}
+
+// section #2
+//user models
+model user {
+  id                  Int                   @id @default(autoincrement())
+  username            String                @unique
+  email_address       String                @unique
+  password            String
+  phone_number        String
+  created_at          DateTime              @default(now())
+  updated_at          DateTime              @updatedAt
+  // ------------------------------------------------------------------------------------------------------------
+  // add the user_address opposite relation
+  user_address        user_address[]
+  // ------------------------------------------------------------------------------------------------------------
+  // add the cart opposite relation
+  cart                cart?
+  // ------------------------------------------------------------------------------------------------------------
+  // add the shop_order opposite relation
+  shop_order          shop_order[]
+  // ------------------------------------------------------------------------------------------------------------
+  // add the user_review opposite relation
+  user_review         user_review[]
+  // ------------------------------------------------------------------------------------------------------------
+  // add the user_payment_method opposite relation
+  user_payment_method user_payment_method[]
+  // ------------------------------------------------------------------------------------------------------------
+  // add the wishlist opposite relation
+  wishlist            wishlist?
+}
+
+model user_address {
+  // ------------------------------------------------------------------------------------------------------------
+  // add the user foreign key relation
+  user_id    Int
+  user       user    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  // ------------------------------------------------------------------------------------------------------------
+  // add the address foreign key relation
+  address_id Int
+  address    address @relation(fields: [address_id], references: [id], onDelete: Cascade)
+  // ------------------------------------------------------------------------------------------------------------
+  is_default Boolean @default(false)
+
+  // add the composite primary key
+  @@id([user_id, address_id])
+}
+
+model address {
+  id            Int            @id @default(autoincrement())
+  address_line1 String
+  address_line2 String
+  city          String
+  state         String
+  country       String
+  postal_code   String
+  // ------------------------------------------------------------------------------------------------------------
+  // add the user_address opposite relation
+  user_address  user_address[]
+  // ------------------------------------------------------------------------------------------------------------
+  // add the shop_order opposite ky
+  shop_order    shop_order[]
+}
+
+model user_review {
+  id                Int        @id @default(autoincrement())
+  // ------------------------------------------------------------------------------------------------------------
+  // user foreign key
+  user_id           Int
+  user              user       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  // ------------------------------------------------------------------------------------------------------------
+  // add the orderd_product_id foreign key relation
+  orderd_product_id Int
+  orderd_product    order_line @relation(fields: [orderd_product_id], references: [id], onDelete: Cascade)
+  // ------------------------------------------------------------------------------------------------------------
+  rating_value      Float
+  comment           String
+  review_date       DateTime   @default(now())
+
+  @@unique([user_id, orderd_product_id])
+}
+
+model user_payment_method {
+  id              Int          @id @default(autoincrement())
+  provider        String
+  account_number  Int
+  expiry_date     DateTime
+  is_defualt      Boolean
+  // ------------------------------------------------------------------------------------------------------------
+  // user foreign key
+  user_id         Int
+  user            user         @relation(fields: [user_id], references: [id])
+  // ------------------------------------------------------------------------------------------------------------
+  // shop_order opppsite key
+  shop_order      shop_order[]
+  // ------------------------------------------------------------------------------------------------------------
+  // add the payment_type foreign key relation
+  payment_type_id Int
+  payment_type    payment_type @relation(fields: [payment_type_id], references: [id])
+  // ------------------------------------------------------------------------------------------------------------
+}
+
+model payment_type {
+  id                  Int                   @id @default(autoincrement())
+  value               String
+  // ------------------------------------------------------------------------------------------------------------
+  // user_payment_method opposite relation
+  user_payment_method user_payment_method[]
+  // ------------------------------------------------------------------------------------------------------------
+}
+
+// section #3
+//cart models
+model cart {
+  id        Int         @id @default(autoincrement())
+  // ------------------------------------------------------------------------------------------------------------
+  // add the user foreign key relation
+  user_id   Int         @unique
+  user      user        @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  // ------------------------------------------------------------------------------------------------------------
+  // add the cart_item opposite relation
+  cart_item cart_item[]
+}
+
+model cart_item {
+  id              Int          @id @default(autoincrement())
+  qty             Int          @default(1)
+  // ------------------------------------------------------------------------------------------------------------
+  // add the cart foreign key relation
+  cart_id         Int
+  cart            cart         @relation(fields: [cart_id], references: [id])
+  // ------------------------------------------------------------------------------------------------------------
+  // add the product_item foreign key relation
+  product_item_id Int
+  product_item    product_item @relation(fields: [product_item_id], references: [id])
+  // ------------------------------------------------------------------------------------------------------------
+}
+
+model wishlist {
+  id            Int             @id @default(autoincrement())
+  // ------------------------------------------------------------------------------------------------------------
+  // add the user foreign key relation
+  user_id       Int             @unique
+  user          user            @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  // ------------------------------------------------------------------------------------------------------------
+  // add the wishlist_item opposite relation
+  wishlist_item wishlist_item[]
+}
+
+model wishlist_item {
+  id              Int          @id @default(autoincrement())
+  // ------------------------------------------------------------------------------------------------------------
+  // add the wishlist foreign key relation
+  wishlist_id     Int
+  wishlist        wishlist     @relation(fields: [wishlist_id], references: [id])
+  // ------------------------------------------------------------------------------------------------------------
+  // add the product_item foreign key relation
+  product_item_id Int
+  product_item    product_item @relation(fields: [product_item_id], references: [id])
+  // ------------------------------------------------------------------------------------------------------------
+}
+
+// section #4
+// order models
+model order_line {
+  id              Int           @id @default(autoincrement())
+  qty             Int
+  price           Float
+  // ------------------------------------------------------------------------------------------------------------
+  // product item foreign key
+  product_item_id Int
+  product_item    product_item  @relation(fields: [product_item_id], references: [id])
+  // ------------------------------------------------------------------------------------------------------------
+  // add user_review opposite relation
+  user_review     user_review[]
+}
+
+model shop_order {
+  id                 Int                 @id @default(autoincrement())
+  order_date         DateTime            @default(now())
+  order_total        Float
+  // ------------------------------------------------------------------------------------------------------------
+  // user foreign key
+  user_id            Int
+  user               user                @relation(fields: [user_id], references: [id])
+  // ------------------------------------------------------------------------------------------------------------
+  // payment_method foreign key
+  payment_method_id  Int
+  payment_method     user_payment_method @relation(fields: [payment_method_id], references: [id])
+  // ------------------------------------------------------------------------------------------------------------
+  // shipping_address foreign key
+  address_id         Int
+  address            address             @relation(fields: [address_id], references: [id])
+  // ------------------------------------------------------------------------------------------------------------
+  // shipping_method foreign key
+  shipping_method_id Int
+  shipping_method    shipping_method     @relation(fields: [shipping_method_id], references: [id])
+  // ------------------------------------------------------------------------------------------------------------
+  // order_status foreign key
+  order_status_id    Int
+  order_status       order_status        @relation(fields: [order_status_id], references: [id])
+  // ------------------------------------------------------------------------------------------------------------
+}
+
+model shipping_method {
+  id         Int          @id @default(autoincrement())
+  name       String
+  price      Float
+  // ------------------------------------------------------------------------------------------------------------
+  // add the shop_order opposite ky
+  shop_order shop_order[]
+  // ------------------------------------------------------------------------------------------------------------
+}
+
+model order_status {
+  id         Int          @id @default(autoincrement())
+  status     String
+  // ------------------------------------------------------------------------------------------------------------
+  // add the shop_order opposite ky
+  shop_order shop_order[]
+  // ------------------------------------------------------------------------------------------------------------
+}
