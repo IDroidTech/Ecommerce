@@ -51,13 +51,14 @@ export class ProductsController {
 
   // ---------------------------------------------------
   // Section 2: Retrieve Products From The Database
-  @Get('category')
-  getProductsByCategory(@Query('category') category: string) {
-    return this.productsService.getProductsByCategory(category);
-  }
-  @Get('brand')
-  getProductsByBrand(@Query('brand') brand: string) {
-    return this.productsService.getProductsByBrand(brand);
+  @Get()
+  getProductsByQuery(@Query() query: { category?: string; brand?: string }) {
+    if (query.category) {
+      return this.productsService.getProductsByCategory(query.category);
+    }
+    if (query.brand) {
+      return this.productsService.getProductsByBrand(query.brand);
+    }
   }
   @Get(':filter')
   getByFilter(
@@ -134,4 +135,14 @@ export class ProductsController {
   // getNewProducts() {
   //   return this.productsService.getNewProducts();
   // }
+  // @Get('category')
+  // getProductsByCategory(@Query('category') category: string) {
+  //   return this.productsService.getProductsByCategory(category);
+  // }
+  // @Get('brand')
+  // getProductsByBrand(@Query('brand') brand: string) {
+  //   return this.productsService.getProductsByBrand(brand);
+  // }
+  // ---------------------------------------------------
+  // test section
 }

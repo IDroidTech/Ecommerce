@@ -10,14 +10,22 @@ export class ProductsService {
   // ---------------------------------------------------
   // Section 1: Create New Products Into The Database
   async createProduct(data: Prisma.productCreateInput) {
-    const product = await this.prisma.product.create({ data });
-    return { msg: 'added', product };
+    return this.prisma.product.create({ data });
   }
 
   createProductItem(
     data: Prisma.product_itemCreateInput,
   ): Promise<product_item | null> {
     return this.prisma.product_item.create({ data });
+  }
+
+  createManyProduct(
+    data: Prisma.productCreateManyInput[],
+  ): Promise<Prisma.BatchPayload> {
+    return this.prisma.product.createMany({
+      data,
+      skipDuplicates: true,
+    });
   }
 
   // ---------------------------------------------------
@@ -262,12 +270,4 @@ export class ProductsService {
 
   // ---------------------------------------------------
   // Test Section
-  createManyProduct(
-    data: Prisma.productCreateManyInput[],
-  ): Promise<Prisma.BatchPayload> {
-    return this.prisma.product.createMany({
-      data,
-      skipDuplicates: true,
-    });
-  }
 }
