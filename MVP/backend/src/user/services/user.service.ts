@@ -1,14 +1,20 @@
 import { HttpException, Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, user } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { AuthService } from 'src/auth/services/auth.service';
+import { SecurityService } from 'src/security/security.service';
 
 @Injectable()
 export class UserService {
   constructor(
     private prisma: PrismaService,
-    private authService: AuthService,
+    private securityService: SecurityService,
   ) {}
+  // section 1: Get User
+  getUser(data: Prisma.userWhereUniqueInput): Promise<user | null> {
+    return this.prisma.user.findUnique({
+      where: { username: data.username },
+    });
+  }
 
   // ---------------------------------------------------
   // Section 1: Create New Users Into The Database
@@ -27,7 +33,9 @@ export class UserService {
     const createdUser = await this.prisma.user.create({
       data: {
         ...data,
-        password: await this.authService.hashPassword(data.password as string),
+        password: await this.securityService.hashPassword(
+          data.password as string,
+        ),
       },
       select: {
         id: true,

@@ -1,10 +1,33 @@
-import { Injectable } from '@nestjs/common';
-import * as bcrypt from 'bcrypt';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { UserService } from 'src/user/services/user.service';
+import { SecurityService } from 'src/security/security.service';
 
 @Injectable()
 export class AuthService {
-  login(): string {
-    return `Login Successfully`;
+  constructor(
+    private userService: UserService,
+    private securityService: SecurityService,
+  ) {}
+
+  async login(data): Promise<string | Error> {
+    const user = await this.userService.getUser(data);
+    if (user === null)
+      throw new HttpException(
+        'User Name Or Password Not Correct',
+        HttpStatus.UNAUTHORIZED,
+      );
+    const checkPassword = await this.securityService.comparePassword(
+      data.password,
+      user.password,
+    );
+    if (checkPassword) {
+      return `JWT Token`;
+    } else {
+      throw new HttpException(
+        'User Name Or Password Not Correct',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
   }
 
   register(): string {
@@ -17,16 +40,5 @@ export class AuthService {
 
   forgotPassword(): string {
     return `Password Reset Link Sent To Your Email`;
-  }
-
-  async hashPassword(password: string): Promise<string> {
-    return bcrypt.hash(password, 14);
-  }
-
-  async comparePassword(
-    password: string,
-    hashedPassword: string,
-  ): Promise<boolean> {
-    return bcrypt.compare(password, hashedPassword);
   }
 }
