@@ -10,7 +10,8 @@ import { JwtModule } from '@nestjs/jwt';
     UserModule,
     SecurityModule,
     JwtModule.register({
-      secret: 'holberton-school-softwareEngineering-2024',
+      secret:
+        process.env.JWT_SECRET || 'holberton-school-softwareEngineering-2024',
       signOptions: { expiresIn: '1h' },
     }),
   ],

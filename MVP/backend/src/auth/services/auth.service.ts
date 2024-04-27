@@ -2,6 +2,7 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { UserService } from 'src/user/services/user.service';
 import { SecurityService } from 'src/security/security.service';
 import { JwtService } from '@nestjs/jwt';
+import { loginDTO } from '../dto/login.dto';
 
 @Injectable()
 export class AuthService {
@@ -11,7 +12,7 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async login(data): Promise<{ access_token: string } | Error> {
+  async login(data: loginDTO): Promise<{ access_token: string } | Error> {
     const user = await this.userService.getUser(data);
     if (user === null)
       throw new HttpException(
